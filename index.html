@@ -6,7 +6,7 @@
 <title>Benzak</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#0F3D3E">
 <style>
 :root{--ink:#10262B;--bg:#EDF1EE;--panel:#fff;--line:#D3DCD7;--head:#0F3D3E;--fill:#7FD6A8;--warn:#F2A81D;--mute:#5B6E70;--btn:#0F3D3E;--btnt:#fff}
@@ -148,11 +148,13 @@ function load(){
 function save(){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
 function num(v){var n=parseFloat(String(v).replace(',','.'));return isFinite(n)&&n>0?n:0}
 function f1(n){return (Math.round(n*10)/10).toLocaleString('ru-RU')}
+function r1(n){return Math.round(Number((n*10).toPrecision(12)))/10}
+function fl(n){return r1(n).toLocaleString('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1})}
 
 function remaining(){
   var t=+s.set.start||0;
-  s.log.forEach(function(e){t+=e.t==='fill'?e.l:(e.f||0)-e.u});
-  return t;
+  s.log.forEach(function(e){t+=e.t==='fill'?r1(e.l):r1(e.f||0)-r1(e.u)});
+  return r1(t);
 }
 
 var calMonth=null,sel='';
@@ -183,8 +185,8 @@ function ymd(dt){var p=function(x){return (x<10?'0':'')+x};return dt.getFullYear
 
 function render(){
   var left=remaining(),tank=+s.set.tank||0;
-  $('left').textContent=f1(Math.max(left,0));
-  $('cap').textContent=tank?f1(tank)+' л':'';
+  $('left').textContent=fl(Math.max(left,0));
+  $('cap').textContent=tank?fl(tank)+' л':'';
 
   var pct=tank?Math.min(Math.max(left/tank,0),1):0;
   cells.forEach(function(c,k){c.style.width=Math.min(Math.max(pct*10-k,0),1)*100+'%'});
@@ -205,8 +207,8 @@ function render(){
     var li=document.createElement('li'),m=document.createElement('div'),b=document.createElement('b'),sp=document.createElement('span'),x=document.createElement('button');
     m.className='m';
     var d=new Date(e.dd?e.dd+'T00:00:00':e.d).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
-    if(e.t==='fill'){b.textContent='Заправка +'+f1(e.l)+' л';b.className='plus';sp.textContent=d}
-    else{b.textContent='Поездка −'+f1(e.u)+' л'+(e.f?', заправка +'+f1(e.f)+' л':'');sp.textContent=d+' · '+f1(e.c+e.h)+' км (город '+f1(e.c)+', трасса '+f1(e.h)+')'+(e.o?', выезд '+f1(e.o)+', возвращение '+f1(e.r):'')}
+    if(e.t==='fill'){b.textContent='Заправка +'+fl(e.l)+' л';b.className='plus';sp.textContent=d}
+    else{b.textContent='Поездка −'+fl(e.u)+' л'+(e.f?', заправка +'+fl(e.f)+' л':'');sp.textContent=d+' · '+f1(e.c+e.h)+' км (город '+f1(e.c)+', трасса '+f1(e.h)+')'+(e.o?', выезд '+f1(e.o)+', возвращение '+f1(e.r):'')}
     m.appendChild(b);m.appendChild(sp);
     x.className='ghost';x.textContent='Удалить';x.setAttribute('aria-label','Удалить запись');
     x.onclick=function(){s.log.splice(s.log.indexOf(e),1);save();render()};
@@ -250,13 +252,13 @@ function trip(){
     else if(hv){h=Math.min(hv,dist);c=dist-h}
     else err='Укажите, сколько км по городу или по трассе';
   }
-  return {f:num($('litTrip').value),dd:$('dateOut').value,o:o,r:r,dist:dist,c:c,h:h,err:err,uc:c*s.set.city/100,uh:h*s.set.hwy/100,u:c*s.set.city/100+h*s.set.hwy/100};
+  return {f:num($('litTrip').value),dd:$('dateOut').value,o:o,r:r,dist:dist,c:c,h:h,err:err,uc:r1(c*s.set.city/100),uh:r1(h*s.set.hwy/100),u:r1(r1(c*s.set.city/100)+r1(h*s.set.hwy/100))};
 }
 
 function hint(){
   var t=trip(),el=$('tripHint');
   if(t.err)el.textContent=t.err;
-  else if(t.dist)el.textContent='Пробег '+f1(t.dist)+' км: город '+f1(t.c)+', трасса '+f1(t.h)+'. Расход '+f1(t.u)+' л';
+  else if(t.dist)el.textContent='Пробег '+f1(t.dist)+' км: город '+f1(t.c)+', трасса '+f1(t.h)+'. Расход '+fl(t.u)+' л';
   else if(t.o&&t.r)el.textContent='Показание при возвращении должно быть больше, чем при выезде';
   else el.textContent='';
   stats();
@@ -269,15 +271,15 @@ function stats(){
     for(var i=s.log.length-1;i>=0;i--){
       var e=s.log[i];
       if(e.t==='trip'){
-        c=e.uc!==undefined?e.uc:e.c*s.set.city/100;
-        h=e.uh!==undefined?e.uh:e.h*s.set.hwy/100;
+        c=e.uc!==undefined?r1(e.uc):r1(e.c*s.set.city/100);
+        h=e.uh!==undefined?r1(e.uh):r1(e.h*s.set.hwy/100);
         kc=e.c;kh=e.h;break;
       }
     }
   }
   $('statsCap').textContent=c===null?'Поездок пока нет':cap;
-  $('uCity').textContent=c===null?'0':f1(c);
-  $('uHwy').textContent=h===null?'0':f1(h);
+  $('uCity').textContent=c===null?'0,0':fl(c);
+  $('uHwy').textContent=h===null?'0,0':fl(h);
   $('kCity').textContent=f1(kc)+' км';
   $('kHwy').textContent=f1(kh)+' км';
 }
